@@ -1,0 +1,6 @@
+cradle:
+  cabal:
+    - path: "./src"
+      component: "lib:w07"
+    - path: "./doctest/doctests.hs"
+      component: "test:w07-doctests"
