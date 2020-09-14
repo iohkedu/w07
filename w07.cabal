@@ -15,6 +15,7 @@ library
   Exposed-Modules:      Marlowe
                       , Sim
                       , W0701
+                      , W0702
   build-depends:        base == 4.14.0.0
                       , containers
                       , mtl
