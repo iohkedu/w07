@@ -1,6 +1,10 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
-module Sim where
+module Sim
+    ( MonadSim (..)
+    , simulate
+    , SimIO, runSimIO, simulateIO
+    ) where
 
 import           Control.Monad
 import qualified Control.Monad.State as S
@@ -96,12 +100,12 @@ instance MonadSim SimIO where
             parse ys
       where
         preprocess :: Action -> SimIO Action
-        preprocess c@(Choice _ _)  = return c
-        preprocess (Deposit a r v) = do
+        preprocess c@(Choice _ _)    = return c
+        preprocess (Deposit a r v t) = do
             env   <- environment
             state <- getState
             let amount = evalValue env state v
-            return $ Deposit a r $ Constant amount
+            return $ Deposit a r (Constant amount) t
 
         parse :: [Action] -> IO (Either Slot Input)
         parse ys = do
@@ -110,8 +114,8 @@ instance MonadSim SimIO where
             case readMaybe <$> words s of
                 [Just i]
                     | i >= 1 && i <= l -> case ys !! (fromIntegral i - 1) of
-                        Deposit a r (Constant amount) -> return $ Right $ IDeposit a r amount
-                        _                             -> parse ys
+                        Deposit a r (Constant amount) t -> return $ Right $ IDeposit a r amount t
+                        _                               -> parse ys
                 [Just i, Just j]
                     | i >= 1 && i <= l -> case ys !! (fromIntegral i - 1) of
                         Choice cid _ -> return $ Right $ IChoice cid j
@@ -132,30 +136,3 @@ runSimIO (SimIO m) = S.evalStateT m (Slot 0, emptyState)
 
 simulateIO :: Contract -> IO ()
 simulateIO = runSimIO . simulate
-
-ex1 :: Contract
-ex1 = When
-    [ Case (Deposit "alice" "alice" SlotIntervalStart) Close ]
-    (Slot 1000)
-    Close
-
-ex2 :: Contract
-ex2 = When
-    [ Case (Deposit "carol" "alice" (Constant 100)) $
-        When
-            [ Case (Deposit "carol" "bob" (Constant 100)) $
-                When
-                    [ Case (Choice (ChoiceId "aliceOrBob" "carol") [Bound 0 0]) $
-                        Pay "carol" (Party "alice") (Constant 200) Close
-                    , Case (Choice (ChoiceId "aliceOrBob" "carol") [Bound 1 1]) $
-                        Pay "carol" (Party "bob") (Constant 200) Close
-                    ]
-                    (Slot 1000)
-                    (Pay "carol" (Party "alice") (Constant 100) $
-                     Pay "carol" (Party "bob") (Constant 100) Close)
-            ]
-            (Slot 1000)
-            (Pay "carol" (Party "alice") (Constant 100) Close)
-    ]
-    (Slot 1000)
-    Close
