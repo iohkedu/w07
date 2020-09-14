@@ -14,3 +14,14 @@ just correctly do what was asked for, but also could be committed
 without further changes to an imaginary company codebase.
 
 ## W7.1 Static Analysis
+
+We know that in Marlowe, it is not an error to reference a `ValueId`
+that has not been set to a value.
+
+Write a static analyzer
+
+```
+undefinedValueIds :: Contract -> Set ValueId
+```
+
+that statically detects such uninitialized `ValueId`s for a given contract.
